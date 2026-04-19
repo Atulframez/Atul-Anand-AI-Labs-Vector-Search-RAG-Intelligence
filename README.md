@@ -153,4 +153,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## 
+## Author
+
+**Atul Anand**  
+BCA (Hons.) Research, Amity University Noida  
+
+- 💻 AI & ML Enthusiast  
+- 🚀 Building Vector Databases & RAG Systems  
+- 🔗 GitHub: https://github.com/Atulframez?tab=overview&from=2026-04-01&to=2026-04-19 
+
