@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atul Anand AI Labs — Vector Search & RAG Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN TOKENS — DARK THEME
+═══════════════════════════════════════════════════════════════ */
+:root[data-theme="dark"] {
+  --bg:          #050510;
+  --bg2:         #080818;
+  --surface:     #0a0a1e;
+  --surface2:    #0d0d24;
+  --glass:       rgba(255,255,255,0.03);
+  --glass-border:rgba(255,255,255,0.07);
+  --border:      #12122a;
+  --border2:     #1a1a38;
+
+  --cs:          #22d3ee;
+  --math:        #a78bfa;
+  --food:        #fb923c;
+  --sports:      #4ade80;
+  --accent:      #6366f1;
+  --accent2:     #8b5cf6;
+  --accent-glow: rgba(99,102,241,0.4);
+
+  --text:        #e2e8f0;
+  --text2:       #94a3b8;
+  --text3:       #475569;
+  --muted:       #334155;
+  --red:         #f87171;
+  --green:       #4ade80;
+  --amber:       #fbbf24;
+
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.5);
+  --shadow-md:   0 4px 20px rgba(0,0,0,0.6);
+  --shadow-lg:   0 8px 40px rgba(0,0,0,0.7);
+  --shadow-glow: 0 0 40px rgba(99,102,241,0.15);
+}
+
+:root[data-theme="light"] {
+  --bg:          #f8fafc;
+  --bg2:         #f1f5f9;
+  --surface:     #ffffff;
+  --surface2:    #f8fafc;
+  --glass:       rgba(255,255,255,0.8);
+  --glass-border:rgba(0,0,0,0.08);
+  --border:      #e2e8f0;
+  --border2:     #cbd5e1;
+
+  --cs:          #0891b2;
+  --math:        #7c3aed;
+  --food:        #ea580c;
+  --sports:      #16a34a;
+  --accent:      #6366f1;
+  --accent2:     #8b5cf6;
+  --accent-glow: rgba(99,102,241,0.2);
+
+  --text:        #0f172a;
+  --text2:       #475569;
+  --text3:       #94a3b8;
+  --muted:       #cbd5e1;
+  --red:         #ef4444;
+  --green:       #16a34a;
+  --amber:       #d97706;
+
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:   0 4px 20px rgba(0,0,0,0.1);
+  --shadow-lg:   0 8px 40px rgba(0,0,0,0.12);
+  --shadow-glow: 0 0 40px rgba(99,102,241,0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NOISE TEXTURE OVERLAY
+═══════════════════════════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════════════════ */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--glass-border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-sm);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: white;
+  box-shadow: 0 0 16px var(--accent-glow);
+  flex-shrink: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, var(--cs), var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+
+.brand-tag {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.header-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--glass-border);
+  flex-shrink: 0;
+}
+
+.header-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  letter-spacing: 1px;
+  border: 1px solid var(--glass-border);
+  color: var(--text3);
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.badge.hl {
+  border-color: rgba(99,102,241,0.4);
+  color: var(--accent);
+  background: rgba(99,102,241,0.08);
+}
+
+.badge.ok {
+  border-color: rgba(74,222,128,0.4);
+  color: var(--green);
+  background: rgba(74,222,128,0.08);
+}
+
+.badge.err {
+  border-color: rgba(248,113,113,0.4);
+  color: var(--red);
+  background: rgba(248,113,113,0.08);
+}
+
+.badge.warn {
+  border-color: rgba(251,191,36,0.4);
+  color: var(--amber);
+  background: rgba(251,191,36,0.08);
+}
+
+#statsLabel {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.5px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Theme toggle */
+.theme-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(99,102,241,0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════════════════════ */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEFT PANEL
+═══════════════════════════════════════════════════════════════ */
+.left-panel {
+  width: 272px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--glass-border);
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  backdrop-filter: blur(20px);
+}
+
+.left-panel::-webkit-scrollbar { width: 2px; }
+.left-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 1px; }
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sec-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sec-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--glass-border);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INPUTS & CONTROLS
+═══════════════════════════════════════════════════════════════ */
+input[type=text], select, textarea {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  appearance: none;
+}
+
+input[type=text]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  background: var(--surface);
+}
+
+input[type=text]::placeholder { color: var(--text3); }
+textarea::placeholder { color: var(--text3); line-height: 1.6; }
+textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+select option { background: var(--surface); color: var(--text); }
+
+input[type=range] {
+  width: 100%;
+  height: 4px;
+  accent-color: var(--accent);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════════════════ */
+button {
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+button:active::after { opacity: 0.06; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  color: #fff;
+  box-shadow: 0 2px 16px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 4px 24px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.1);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  transform: none;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text2);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.btn-success {
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.25);
+  color: var(--green);
+}
+
+.btn-success:hover {
+  background: rgba(74,222,128,0.18);
+  border-color: rgba(74,222,128,0.4);
+}
+
+.btn-success:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Algo buttons */
+.algo-row {
+  display: flex;
+  gap: 4px;
+  background: var(--bg2);
+  padding: 3px;
+  border-radius: 9px;
+  border: 1px solid var(--glass-border);
+}
+
+.algo-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  font-size: 9px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.algo-btn.on {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.algo-btn:hover:not(.on) { color: var(--text2); }
+
+/* ═══════════════════════════════════════════════════════════════
+   LEGEND
+═══════════════════════════════════════════════════════════════ */
+.legend { display: flex; flex-direction: column; gap: 6px; }
+
+.leg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text2);
+  padding: 5px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.leg-row:hover { background: var(--glass); }
+
+.leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Slider label */
+.slider-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.slider-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(99,102,241,0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CENTER PANEL
+═══════════════════════════════════════════════════════════════ */
+.center-panel {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+#scatter { display: block; width: 100%; height: 100%; }
+
+.scatter-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.scatter-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.scatter-sub {
+  font-size: 9px;
+  color: var(--text3);
+  opacity: 0.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RIGHT PANEL
+═══════════════════════════════════════════════════════════════ */
+.right-panel {
+  width: 380px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════════════ */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+  padding: 0 4px;
+  gap: 2px;
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 8px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  color: var(--text3);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.tab:hover { color: var(--text2); }
+.tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-content {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tab-content.on { display: flex; }
+.tab-content::-webkit-scrollbar { width: 2px; }
+.tab-content::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* ═══════════════════════════════════════════════════════════════
+   METRIC CARDS
+═══════════════════════════════════════════════════════════════ */
+.metric-card {
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.metric-card:hover { border-color: var(--border2); }
+
+.metric-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+
+.lat-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--cs), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.lat-meta {
+  font-size: 10px;
+  color: var(--text3);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lat-chip {
+  padding: 2px 7px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SEARCH RESULTS
+═══════════════════════════════════════════════════════════════ */
+.results { display: flex; flex-direction: column; gap: 8px; }
+
+.rcard {
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: all 0.2s;
+  animation: slideIn 0.25s cubic-bezier(0.4,0,0.2,1) both;
+  cursor: default;
+}
+
+.rcard:hover {
+  border-color: var(--border2);
+  background: var(--surface2);
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.rcard:nth-child(1) { animation-delay: 0ms; }
+.rcard:nth-child(2) { animation-delay: 50ms; }
+.rcard:nth-child(3) { animation-delay: 100ms; }
+.rcard:nth-child(4) { animation-delay: 150ms; }
+.rcard:nth-child(5) { animation-delay: 200ms; }
+
+.rrank {
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.rmeta { font-size: 12px; line-height: 1.5; margin-bottom: 10px; color: var(--text); }
+
+.rfoot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rcat {
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.rdist {
+  font-size: 10px;
+  color: var(--text3);
+  flex: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.del-btn {
+  width: auto;
+  background: rgba(248,113,113,0.08);
+  color: var(--red);
+  border: 1px solid rgba(248,113,113,0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 3px 8px;
+  font-family: inherit;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.del-btn:hover {
+  background: rgba(248,113,113,0.18);
+  border-color: rgba(248,113,113,0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON LOADERS
+═══════════════════════════════════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--glass) 25%,
+    var(--border) 50%,
+    var(--glass) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skel-card {
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skel-line { height: 10px; }
+.skel-line.short { width: 30%; }
+.skel-line.medium { width: 60%; }
+.skel-line.long { width: 90%; }
+
+/* ═══════════════════════════════════════════════════════════════
+   VEC CHART
+═══════════════════════════════════════════════════════════════ */
+#vecCvs {
+  display: block;
+  width: 100%;
+  background: var(--bg2);
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BENCHMARK
+═══════════════════════════════════════════════════════════════ */
+.bench { display: flex; flex-direction: column; gap: 10px; }
+
+.brow { display: flex; flex-direction: column; gap: 5px; }
+
+.blabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.btrack {
+  height: 6px;
+  background: var(--bg);
+  border-radius: 100px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.bfill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HNSW LAYERS
+═══════════════════════════════════════════════════════════════ */
+.layers { display: flex; flex-direction: column; gap: 6px; }
+
+.lrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.lnum {
+  width: 20px;
+  text-align: right;
+  color: var(--accent);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ltrack {
+  flex: 1;
+  height: 4px;
+  background: var(--bg);
+  border-radius: 100px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.lfill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 100px;
+  opacity: 0.8;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lcount {
+  width: 90px;
+  text-align: right;
+  color: var(--text3);
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   OLLAMA STATUS
+═══════════════════════════════════════════════════════════════ */
+.ollama-card {
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 11px;
+  line-height: 1.7;
+  transition: border-color 0.2s;
+}
+
+.ollama-card.ok  { border-color: rgba(74,222,128,0.2); }
+.ollama-card.err { border-color: rgba(248,113,113,0.2); }
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.online  { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse-dot 2s ease infinite; }
+.status-dot.offline { background: var(--red); }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.ollama-info { display: flex; flex-direction: column; gap: 4px; }
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+}
+
+.info-key { color: var(--text3); }
+.info-val { color: var(--accent); font-weight: 500; }
+
+/* ═══════════════════════════════════════════════════════════════
+   DOCUMENT CARDS
+═══════════════════════════════════════════════════════════════ */
+.doc-list { display: flex; flex-direction: column; gap: 8px; }
+
+.dcard {
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: all 0.2s;
+  animation: slideIn 0.25s cubic-bezier(0.4,0,0.2,1) both;
+}
+
+.dcard:hover { border-color: var(--border2); }
+
+.dcard-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.dcard-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  line-height: 1.3;
+}
+
+.dcard-preview {
+  font-size: 10px;
+  color: var(--text3);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.dcard-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dcard-words {
+  font-size: 9px;
+  color: var(--text3);
+  padding: 2px 6px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHAT UI
+═══════════════════════════════════════════════════════════════ */
+.chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chat-q {
+  align-self: flex-end;
+  max-width: 90%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  color: white;
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  box-shadow: 0 2px 12px var(--accent-glow);
+  animation: slideIn 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+
+.chat-a {
+  align-self: flex-start;
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px 16px 16px 16px;
+  padding: 14px;
+  animation: slideIn 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.chat-a-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ai-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.ai-name {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--green);
+  text-transform: uppercase;
+}
+
+.chat-a-text {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.typing-cursor::after {
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  color: var(--accent);
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.chat-ctx {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.chat-ctx-label {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.ctx-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.ctx-chip {
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: rgba(99,102,241,0.08);
+  border: 1px solid rgba(99,102,241,0.2);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.ctx-chip:hover {
+  background: rgba(99,102,241,0.16);
+  border-color: rgba(99,102,241,0.4);
+}
+
+.ctx-expand {
+  display: none;
+  font-size: 10px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+}
+
+/* Thinking indicator */
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px 16px 16px 16px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.thinking-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: bounce 1.2s ease infinite;
+}
+
+.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOOLTIP
+═══════════════════════════════════════════════════════════════ */
+#tip {
+  position: fixed;
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 11px;
+  pointer-events: none;
+  max-width: 240px;
+  z-index: 999;
+  line-height: 1.6;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(20px);
+}
+
+.tip-cat {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════════════ */
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--glass-border);
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.footer-left {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.5px;
+}
+
+.footer-left span {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.footer-right {
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 1px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EMPTY STATES
+═══════════════════════════════════════════════════════════════ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 28px;
+  opacity: 0.3;
+}
+
+.empty-text {
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STATUS INDICATOR (insert)
+═══════════════════════════════════════════════════════════════ */
+.insert-status {
+  font-size: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+.insert-status.success {
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.2);
+  color: var(--green);
+}
+
+.insert-status.error {
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.2);
+  color: var(--red);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLLBAR GLOBAL
+═══════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 2px; height: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .left-panel { width: 240px; }
+  .right-panel { width: 340px; }
+}
+
+@media (max-width: 900px) {
+  body { overflow: auto; height: auto; }
+  .layout { flex-direction: column; height: auto; overflow: visible; }
+  .left-panel, .right-panel { width: 100%; border: none; border-bottom: 1px solid var(--glass-border); }
+  .center-panel { height: 380px; border-bottom: 1px solid var(--glass-border); }
+  .right-panel { height: 600px; }
+  .tab-content { max-height: 500px; }
+  .header-badges { display: none; }
+  .brand-tag { display: none; }
+}
+
+@media (max-width: 600px) {
+  header { padding: 0 12px; height: 50px; }
+  .left-panel, .right-panel { padding: 14px 12px; }
+  .center-panel { height: 300px; }
+  footer { flex-direction: column; gap: 4px; text-align: center; padding: 6px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════ -->
+<header>
+  <div class="header-brand">
+    <div class="brand-logo">A</div>
+    <div class="brand-text">
+      <div class="brand-name">Atul Anand AI Labs</div>
+      <div class="brand-tag">Advanced Vector Search &amp; RAG Intelligence</div>
+    </div>
+  </div>
+
+  <div class="header-divider"></div>
+
+  <div class="header-badges">
+    <span class="badge hl">HNSW</span>
+    <span class="badge">KD-TREE</span>
+    <span class="badge">BRUTE FORCE</span>
+    <span class="badge" id="ollamaBadge">OLLAMA…</span>
+  </div>
+
+  <span id="statsLabel">loading…</span>
+
+  <div class="header-actions">
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">🌙</button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════
+     MAIN LAYOUT
+══════════════════════════════════════════════════════════ -->
+<div class="layout">
+
+  <!-- ══ LEFT PANEL ══ -->
+  <div class="left-panel">
+
+    <div class="panel-section">
+      <div class="sec-label">Query</div>
+      <input type="text" id="qInput" placeholder="binary tree, sushi, basketball…" autocomplete="off" />
+      <button class="btn-primary" onclick="runSearch()">⚡ Search Vectors</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="sec-label">Algorithm</div>
+      <div class="algo-row">
+        <div class="algo-btn on" data-algo="hnsw"      onclick="setAlgo(this)">HNSW</div>
+        <div class="algo-btn"   data-algo="kdtree"     onclick="setAlgo(this)">KD-Tree</div>
+        <div class="algo-btn"   data-algo="bruteforce" onclick="setAlgo(this)">Brute</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="sec-label">Distance Metric</div>
+      <select id="metric">
+        <option value="cosine">Cosine Similarity</option>
+        <option value="euclidean">Euclidean Distance</option>
+        <option value="manhattan">Manhattan Distance</option>
+      </select>
+    </div>
+
+    <div class="panel-section">
+      <div class="slider-row">
+        <span>Top-K Results</span>
+        <span class="slider-val" id="kLabel">5</span>
+      </div>
+      <input type="range" id="kSlider" min="1" max="10" value="5"
+             oninput="document.getElementById('kLabel').textContent=this.value">
+    </div>
+
+    <div class="panel-section">
+      <div class="sec-label">Category Legend</div>
+      <div class="legend">
+        <div class="leg-row">
+          <div class="leg-dot" style="background:var(--cs);box-shadow:0 0 6px var(--cs)"></div>
+          CS / Algorithms
+        </div>
+        <div class="leg-row">
+          <div class="leg-dot" style="background:var(--math);box-shadow:0 0 6px var(--math)"></div>
+          Mathematics
+        </div>
+        <div class="leg-row">
+          <div class="leg-dot" style="background:var(--food);box-shadow:0 0 6px var(--food)"></div>
+          Food &amp; Cooking
+        </div>
+        <div class="leg-row">
+          <div class="leg-dot" style="background:var(--sports);box-shadow:0 0 6px var(--sports)"></div>
+          Sports &amp; Games
+        </div>
+        <div class="leg-row">
+          <div class="leg-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+          Documents (RAG)
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="sec-label">Insert Demo Vector</div>
+      <input type="text" id="addMeta" placeholder="Description…" autocomplete="off" />
+      <select id="addCat">
+        <option value="cs">CS / Algorithms</option>
+        <option value="math">Mathematics</option>
+        <option value="food">Food &amp; Cooking</option>
+        <option value="sports">Sports &amp; Games</option>
+      </select>
+      <button class="btn-secondary" onclick="addVector()">+ Insert Vector</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="sec-label">Benchmark</div>
+      <button class="btn-secondary" onclick="runBenchmark()">▶ Compare All Algorithms</button>
+    </div>
+
+  </div><!-- end left-panel -->
+
+  <!-- ══ CENTER: SCATTER PLOT ══ -->
+  <div class="center-panel">
+    <canvas id="scatter"></canvas>
+    <div class="scatter-overlay">
+      <div class="scatter-title">2D PCA Projection · Semantic Space</div>
+      <div class="scatter-sub">Hover over points to inspect vectors</div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT PANEL ══ -->
+  <div class="right-panel">
+    <div class="tabs">
+      <div class="tab on"  onclick="switchTab('search')">Search</div>
+      <div class="tab"     onclick="switchTab('docs')">Documents</div>
+      <div class="tab"     onclick="switchTab('rag')">Ask AI</div>
+    </div>
+
+    <!-- TAB: SEARCH -->
+    <div class="tab-content on" id="tab-search">
+
+      <div class="metric-card">
+        <div class="metric-label">Search Latency</div>
+        <div class="lat-value" id="latBig">—</div>
+        <div class="lat-meta" id="latSub">
+          <span class="lat-chip">No query yet</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="metric-label" style="margin-bottom:10px">Top Matches</div>
+        <div class="results" id="results">
+          <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <div class="empty-text">Run a search to see nearest neighbors appear here</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="metric-label" style="margin-bottom:10px">Query Embedding (16D)</div>
+        <canvas id="vecCvs" height="76"></canvas>
+      </div>
+
+      <div id="benchSec" style="display:none">
+        <div class="metric-label" style="margin-bottom:10px">Algorithm Comparison</div>
+        <div class="bench" id="benchBars"></div>
+      </div>
+
+      <div>
+        <div class="metric-label" style="margin-bottom:10px">HNSW Graph Layers</div>
+        <div class="layers" id="layers">
+          <div class="empty-state">
+            <div class="empty-icon">🕸️</div>
+            <div class="empty-text" style="font-size:10px">Loading graph structure…</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end tab-search -->
+
+    <!-- TAB: DOCUMENTS -->
+    <div class="tab-content" id="tab-docs">
+
+      <div>
+        <div class="metric-label" style="margin-bottom:10px">Ollama Status</div>
+        <div class="ollama-card" id="ollamaStatus">
+          <div class="status-row">
+            <div class="status-dot offline"></div>
+            <span style="font-size:11px;color:var(--text3)">Checking connection…</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="metric-label" style="margin-bottom:10px">Insert Document</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <input type="text" id="docTitle" placeholder="Document title / topic…" />
+          <textarea id="docText" placeholder="Paste your notes, textbook excerpt, or lecture content…&#10;&#10;Long text is automatically split into overlapping 250-word chunks, each embedded via Ollama's nomic-embed-text model."></textarea>
+          <button class="btn-success" id="insertDocBtn" onclick="insertDocument()">⚡ Embed &amp; Insert</button>
+          <div id="insertStatus"></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="metric-label">Stored Documents</div>
+          <span class="badge" style="font-size:9px" id="docCountLabel">0 chunks</span>
+        </div>
+        <div class="doc-list" id="docList">
+          <div class="empty-state">
+            <div class="empty-icon">📄</div>
+            <div class="empty-text">No documents yet.<br>Insert some above to enable RAG.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end tab-docs -->
+
+    <!-- TAB: ASK AI (RAG) -->
+    <div class="tab-content" id="tab-rag">
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="metric-label">Ask a Question</div>
+        <textarea id="ragQuestion" rows="3"
+          placeholder="What is dynamic programming?&#10;Explain HNSW graph construction.&#10;How does the recipe differ…"></textarea>
+        <div style="display:flex;gap:8px">
+          <select id="ragK" style="width:auto;flex-shrink:0">
+            <option value="2">Top 2</option>
+            <option value="3" selected>Top 3</option>
+            <option value="5">Top 5</option>
+          </select>
+          <button class="btn-success" id="askBtn" onclick="askAI()" style="flex:1">🤖 Ask AI</button>
+        </div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:0.3px;line-height:1.6">
+          Uses inserted documents as context. Answers generated by your local LLM via Ollama.
+        </div>
+      </div>
+
+      <div>
+        <div class="metric-label" style="margin-bottom:12px">Conversation</div>
+        <div class="chat-history" id="chatHistory">
+          <div class="empty-state">
+            <div class="empty-icon">🤖</div>
+            <div class="empty-text">Ask a question about your inserted documents.<br>Ctrl+Enter to send.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end tab-rag -->
+
+  </div><!-- end right-panel -->
+</div><!-- end layout -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <span>Atul Anand AI Labs</span> · Advanced Vector Search &amp; RAG Intelligence System
+  </div>
+  <div class="footer-right">
+    Built by Atul Anand &nbsp;•&nbsp; BCA (Hons.) &nbsp;•&nbsp; Amity University
+  </div>
+</footer>
+
+<!-- TOOLTIP -->
+<div id="tip"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════ -->
+<script>
+// ════════════════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════════════════
+const API  = 'http://localhost:8080';
+const DIMS = 16;
+const COL  = {
+  cs:      '#22d3ee',
+  math:    '#a78bfa',
+  food:    '#fb923c',
+  sports:  '#4ade80',
+  doc:     '#4ade80',
+  default: '#94a3b8'
+};
+const DIM_COL = [
+  '#22d3ee','#22d3ee','#22d3ee','#22d3ee',
+  '#a78bfa','#a78bfa','#a78bfa','#a78bfa',
+  '#fb923c','#fb923c','#fb923c','#fb923c',
+  '#4ade80','#4ade80','#4ade80','#4ade80'
+];
+
+// ════════════════════════════════════════════════════════════
+//  THEME
+// ════════════════════════════════════════════════════════════
+let currentTheme = localStorage.getItem('theme') || 'dark';
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '🌙' : '☀️';
+  localStorage.setItem('theme', t);
+}
+
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  applyTheme(currentTheme);
+}
+
+applyTheme(currentTheme);
+
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+let allItems = [], pcaPoints = [], hitIds = new Set(), queryPt = null;
+let hoverItem = null, pulse = 0, selAlgo = 'hnsw', searchResults = [];
+
+// ════════════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['search', 'docs', 'rag'];
+    t.classList.toggle('on', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('on'));
+  document.getElementById('tab-' + name).classList.add('on');
+  if (name === 'docs') loadDocList();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TEXT → 16D EMBEDDING (demo)
+// ════════════════════════════════════════════════════════════
+const KW = {
+  cs:     ['algorithm','data','tree','graph','array','linked','hash','stack','queue','sort','binary','dynamic','programming','recursion','complexity','pointer','node','search','insert','bfs','dfs','heap','trie'],
+  math:   ['calculus','matrix','probability','theorem','integral','derivative','linear','algebra','equation','function','prime','modular','combinatorics','permutation','eigenvalue','statistics','proof'],
+  food:   ['food','pizza','sushi','ramen','pasta','recipe','cook','eat','restaurant','dish','ingredient','flavor','spice','noodle','bread','croissant','taco','fish','rice','soup'],
+  sports: ['sport','basketball','football','tennis','chess','swim','game','play','score','team','athlete','competition','match','tournament','olympic','dribble','tackle','serve']
+};
+
+function textToEmbedding(text) {
+  const t = text.toLowerCase(), ws = t.split(/\s+/);
+  const s = {cs:0, math:0, food:0, sports:0};
+  for (const w of ws)
+    for (const [cat, kws] of Object.entries(KW))
+      for (const kw of kws) if (w.includes(kw) || kw.startsWith(w)) { s[cat] += 0.35; break; }
+  const mx = Math.max(...Object.values(s), 0.01);
+  const n = v => Math.min(v / mx * 0.88, 0.94);
+  const jitter = () => (Math.random() - 0.5) * 0.04;
+  const emb = new Array(16).fill(0.08);
+  const fill = (i, score) => {
+    if (score < 0.01) return;
+    const b = n(score);
+    emb[i]   = Math.max(0.05, b + jitter());
+    emb[i+1] = Math.max(0.05, b + jitter());
+    emb[i+2] = Math.max(0.05, b * 0.92 + jitter());
+    emb[i+3] = Math.max(0.05, b * 0.87 + jitter());
+  };
+  fill(0, s.cs); fill(4, s.math); fill(8, s.food); fill(12, s.sports);
+  return emb;
+}
+
+// ════════════════════════════════════════════════════════════
+//  PCA 2D
+// ════════════════════════════════════════════════════════════
+function pca2D(embs) {
+  const n = embs.length, d = embs[0].length;
+  if (n < 2) return embs.map(() => [0, 0]);
+  const mean = new Array(d).fill(0);
+  for (const e of embs) for (let i = 0; i < d; i++) mean[i] += e[i] / n;
+  const X = embs.map(e => e.map((v, i) => v - mean[i]));
+
+  function powerIter(X, excl) {
+    let v = new Array(d).fill(0).map(() => Math.random() - 0.5);
+    if (excl) { let dot = v.reduce((s,vi,i) => s+vi*excl[i], 0); v = v.map((vi,i) => vi-dot*excl[i]); }
+    let nrm = Math.sqrt(v.reduce((s, vi) => s + vi * vi, 0));
+    v = v.map(vi => vi / nrm);
+    for (let it = 0; it < 200; it++) {
+      const Xv = X.map(xi => xi.reduce((s, xij, j) => s + xij * v[j], 0));
+      const nv = new Array(d).fill(0);
+      for (let k = 0; k < n; k++) for (let j = 0; j < d; j++) nv[j] += X[k][j] * Xv[k];
+      if (excl) { let dot = nv.reduce((s,vi,i) => s+vi*excl[i], 0); for (let i = 0; i < d; i++) nv[i] -= dot*excl[i]; }
+      nrm = Math.sqrt(nv.reduce((s, vi) => s + vi * vi, 0));
+      if (nrm < 1e-10) break;
+      const prev = v.slice(); v = nv.map(vi => vi / nrm);
+      if (v.reduce((s, vi, i) => s + (vi - prev[i]) ** 2, 0) < 1e-12) break;
+    }
+    return v;
+  }
+
+  const pc1 = powerIter(X, null), pc2 = powerIter(X, pc1);
+  return X.map(x => [
+    x.reduce((s, v, i) => s + v * pc1[i], 0),
+    x.reduce((s, v, i) => s + v * pc2[i], 0)
+  ]);
+}
+
+// ════════════════════════════════════════════════════════════
+//  SCATTER PLOT
+// ════════════════════════════════════════════════════════════
+const sc  = document.getElementById('scatter');
+const ctx = sc.getContext('2d');
+let bounds = { minX: -1, maxX: 1, minY: -1, maxY: 1 };
+
+function resize() {
+  const r = sc.parentElement.getBoundingClientRect();
+  sc.width = r.width; sc.height = r.height;
+}
+window.addEventListener('resize', resize);
+
+function w2c(wx, wy) {
+  const P = 72, W = sc.width, H = sc.height;
+  const rx = bounds.maxX - bounds.minX || 1;
+  const ry = bounds.maxY - bounds.minY || 1;
+  return [
+    P + ((wx - bounds.minX) / rx) * (W - 2*P),
+    H - P - ((wy - bounds.minY) / ry) * (H - 2*P)
+  ];
+}
+
+function getCSSVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function drawFrame() {
+  ctx.clearRect(0, 0, sc.width, sc.height);
+
+  // Background
+  const bgCol = getCSSVar('--bg') || '#050510';
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0, 0, sc.width, sc.height);
+
+  // Subtle ambient gradient
+  const theme = document.documentElement.getAttribute('data-theme');
+  const ambientAlpha = theme === 'dark' ? '0.04' : '0.06';
+  const grd = ctx.createRadialGradient(sc.width*0.5, sc.height*0.5, 0, sc.width*0.5, sc.height*0.5, sc.width*0.6);
+  grd.addColorStop(0, `rgba(99,102,241,${ambientAlpha})`);
+  grd.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, sc.width, sc.height);
+
+  // Grid
+  const gridAlpha = theme === 'dark' ? '0.04' : '0.06';
+  ctx.strokeStyle = `rgba(148,163,184,${gridAlpha})`;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 10; i++) {
+    const tx = 72 + (i/10) * (sc.width  - 144);
+    const ty = 72 + (i/10) * (sc.height - 144);
+    ctx.beginPath(); ctx.moveTo(tx, 72); ctx.lineTo(tx, sc.height-72); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(72, ty); ctx.lineTo(sc.width-72, ty); ctx.stroke();
+  }
+
+  // Connection lines from query to hits
+  if (queryPt && hitIds.size > 0) {
+    const [qx, qy] = w2c(queryPt.x, queryPt.y);
+    for (const pt of pcaPoints) {
+      if (!hitIds.has(pt.item.id)) continue;
+      const [px, py] = w2c(pt.x, pt.y);
+      ctx.strokeStyle = 'rgba(99,102,241,0.15)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath(); ctx.moveTo(qx, qy); ctx.lineTo(px, py); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Points
+  for (const pt of pcaPoints) {
+    const [cx, cy] = w2c(pt.x, pt.y);
+    const col = COL[pt.item.category] || COL.default;
+    const isHit = hitIds.has(pt.item.id);
+    const r = isHit ? 9 : 6;
+
+    // Pulse ring for hits
+    if (isHit) {
+      const pr = r + 8 + Math.sin(pulse) * 4;
+      ctx.beginPath(); ctx.arc(cx, cy, pr, 0, 2*Math.PI);
+      ctx.strokeStyle = col + '44'; ctx.lineWidth = 1.5; ctx.stroke();
+
+      // Second ring
+      const pr2 = r + 14 + Math.sin(pulse + 1) * 3;
+      ctx.beginPath(); ctx.arc(cx, cy, pr2, 0, 2*Math.PI);
+      ctx.strokeStyle = col + '22'; ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    // Glow
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 3.5);
+    glow.addColorStop(0, col + (isHit ? 'cc' : '66'));
+    glow.addColorStop(1, 'transparent');
+    ctx.beginPath(); ctx.arc(cx, cy, r * 3.5, 0, 2*Math.PI);
+    ctx.fillStyle = glow; ctx.fill();
+
+    // Core
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2*Math.PI);
+    ctx.fillStyle = col; ctx.fill();
+
+    // Hover ring
+    if (hoverItem && hoverItem.id === pt.item.id) {
+      ctx.beginPath(); ctx.arc(cx, cy, r + 5, 0, 2*Math.PI);
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  // Query star
+  if (queryPt) {
+    const [qx, qy] = w2c(queryPt.x, queryPt.y);
+    ctx.save(); ctx.translate(qx, qy);
+    ctx.shadowColor = 'rgba(255,255,255,0.8)'; ctx.shadowBlur = 20;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = (i * Math.PI / 5) - Math.PI/2;
+      const rr = i % 2 === 0 ? 12 : 5;
+      if (i === 0) ctx.moveTo(Math.cos(a)*rr, Math.sin(a)*rr);
+      else ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.shadowBlur = 0; ctx.restore();
+    ctx.fillStyle = 'rgba(148,163,184,0.7)';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText('query', qx + 16, qy + 4);
+  }
+
+  // Empty state
+  if (!pcaPoints.length) {
+    ctx.fillStyle = 'rgba(148,163,184,0.2)';
+    ctx.font = '13px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Connecting to VectorDB…', sc.width/2, sc.height/2);
+    ctx.textAlign = 'left';
+  }
+
+  pulse += 0.04;
+  requestAnimationFrame(drawFrame);
+}
+
+// Hover
+sc.addEventListener('mousemove', e => {
+  const rect = sc.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  hoverItem = null; let best = 20;
+  for (const pt of pcaPoints) {
+    const [cx, cy] = w2c(pt.x, pt.y);
+    const d = Math.hypot(mx - cx, my - cy);
+    if (d < best) { best = d; hoverItem = pt.item; }
+  }
+  const tip = document.getElementById('tip');
+  if (hoverItem) {
+    const col = COL[hoverItem.category] || COL.default;
+    tip.style.display = 'block';
+    tip.style.left = (e.clientX + 16) + 'px';
+    tip.style.top  = (e.clientY - 10) + 'px';
+    tip.innerHTML =
+      `<div class="tip-cat" style="color:${col}">${hoverItem.category.toUpperCase()}</div>` +
+      `<div style="color:var(--text);font-size:11px">${hoverItem.metadata}</div>`;
+  } else {
+    tip.style.display = 'none';
+  }
+});
+sc.addEventListener('mouseleave', () => {
+  hoverItem = null;
+  document.getElementById('tip').style.display = 'none';
+});
+
+// ════════════════════════════════════════════════════════════
+//  LOAD DEMO ITEMS
+// ════════════════════════════════════════════════════════════
+async function loadItems() {
+  try {
+    const r = await fetch(API + '/items');
+    allItems = await r.json();
+    if (allItems.length >= 2) {
+      const coords = pca2D(allItems.map(v => v.embedding));
+      pcaPoints = allItems.map((item, i) => ({ x: coords[i][0], y: coords[i][1], item }));
+      let x0=Infinity, x1=-Infinity, y0=Infinity, y1=-Infinity;
+      for (const p of pcaPoints) {
+        x0=Math.min(x0,p.x); x1=Math.max(x1,p.x);
+        y0=Math.min(y0,p.y); y1=Math.max(y1,p.y);
+      }
+      const px = (x1-x0)*0.18 || 0.1, py = (y1-y0)*0.18 || 0.1;
+      bounds = { minX: x0-px, maxX: x1+px, minY: y0-py, maxY: y1+py };
+    }
+    document.getElementById('statsLabel').textContent = `${allItems.length} vectors · ${DIMS}D`;
+  } catch(_) {}
+}
+
+// ════════════════════════════════════════════════════════════
+//  SEARCH
+// ════════════════════════════════════════════════════════════
+function setAlgo(el) {
+  document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  selAlgo = el.dataset.algo;
+}
+
+async function runSearch() {
+  const text = document.getElementById('qInput').value.trim();
+  if (!text) return;
+
+  const emb = textToEmbedding(text);
+  const k   = parseInt(document.getElementById('kSlider').value);
+  const metric = document.getElementById('metric').value;
+  const url = `${API}/search?v=${emb.join(',')}&k=${k}&metric=${metric}&algo=${selAlgo}`;
+
+  // Show skeleton while loading
+  document.getElementById('results').innerHTML = renderSkeletons(3);
+
+  try {
+    const r = await fetch(url);
+    const data = await r.json();
+    searchResults = data.results || [];
+    hitIds = new Set(searchResults.map(r => r.id));
+
+    const us = data.latencyUs || 0;
+    document.getElementById('latBig').textContent = us < 1000 ? us + ' μs' : (us/1000).toFixed(2) + ' ms';
+    document.getElementById('latSub').innerHTML =
+      `<span class="lat-chip">${selAlgo.toUpperCase()}</span>` +
+      `<span class="lat-chip">${metric}</span>` +
+      `<span class="lat-chip">k=${k}</span>`;
+
+    if (searchResults.length > 0) {
+      let sx=0, sy=0, sw=0;
+      for (let i = 0; i < Math.min(3, searchResults.length); i++) {
+        const pt = pcaPoints.find(p => p.item.id === searchResults[i].id);
+        if (pt) { const w = 1/(i+1); sx+=pt.x*w; sy+=pt.y*w; sw+=w; }
+      }
+      if (sw > 0) queryPt = { x: sx/sw + (Math.random()-0.5)*0.015, y: sy/sw + (Math.random()-0.5)*0.015 };
+    }
+
+    renderResults(searchResults);
+    drawVecChart(emb);
+  } catch(_) {
+    alert('Cannot reach VectorDB server — is it running on :8080?');
+    document.getElementById('results').innerHTML = '';
+  }
+}
+
+document.getElementById('qInput').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+
+function renderSkeletons(n) {
+  return Array(n).fill(0).map(() =>
+    `<div class="skel-card">
+      <div class="skeleton skel-line short"></div>
+      <div class="skeleton skel-line long" style="height:12px;margin:4px 0"></div>
+      <div class="skeleton skel-line medium"></div>
+    </div>`
+  ).join('');
+}
+
+function renderResults(results) {
+  if (!results || !results.length) {
+    document.getElementById('results').innerHTML =
+      `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">No matching vectors found</div></div>`;
+    return;
+  }
+  document.getElementById('results').innerHTML = results.map((r, i) => {
+    const col = COL[r.category] || COL.default;
+    return `<div class="rcard" onmouseenter="hoverItem={id:${r.id}}" onmouseleave="hoverItem=null">
+      <div class="rrank">#${i+1} &nbsp;·&nbsp; Nearest Neighbor</div>
+      <div class="rmeta">${r.metadata}</div>
+      <div class="rfoot">
+        <span class="rcat" style="background:${col}18;color:${col};border:1px solid ${col}33">
+          ${r.category.toUpperCase()}
+        </span>
+        <span class="rdist">dist: ${r.distance.toFixed(5)}</span>
+        <button class="del-btn" onclick="deleteItem(${r.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function drawVecChart(emb) {
+  const vc = document.getElementById('vecCvs');
+  const W  = vc.parentElement.clientWidth;
+  vc.width = W;
+  const vx = vc.getContext('2d');
+  const theme = document.documentElement.getAttribute('data-theme');
+  const bgFill = theme === 'dark' ? '#080818' : '#f8fafc';
+  vx.clearRect(0, 0, W, 76);
+  vx.fillStyle = bgFill;
+  vx.fillRect(0, 0, W, 76);
+  const bw = (W - 8) / DIMS;
+  for (let i = 0; i < DIMS; i++) {
+    const h   = emb[i] * 52;
+    const x   = 4 + i * bw;
+    const col = DIM_COL[i];
+    vx.shadowColor = col; vx.shadowBlur = 6;
+    vx.fillStyle = col + 'bb';
+    vx.fillRect(x + 1, 58 - h, bw - 3, h);
+    vx.beginPath();
+    vx.fillStyle = col;
+    vx.fillRect(x + 1, 58 - h, bw - 3, 2);
+  }
+  vx.shadowBlur = 0;
+  vx.font = '8px JetBrains Mono, monospace';
+  vx.textAlign = 'center';
+  [['CS',0],['MATH',4],['FOOD',8],['SPORT',12]].forEach(([lbl, gi], i) => {
+    vx.fillStyle = Object.values(COL)[i] + '66';
+    vx.fillText(lbl, 4 + (gi + 1.5) * bw, 72);
+  });
+  vx.textAlign = 'left';
+}
+
+// ════════════════════════════════════════════════════════════
+//  BENCHMARK
+// ════════════════════════════════════════════════════════════
+async function runBenchmark() {
+  const text   = document.getElementById('qInput').value.trim() || 'binary tree algorithm';
+  const emb    = textToEmbedding(text);
+  const metric = document.getElementById('metric').value;
+  try {
+    const r = await fetch(`${API}/benchmark?v=${emb.join(',')}&k=5&metric=${metric}`);
+    const d = await r.json();
+    document.getElementById('benchSec').style.display = 'block';
+    const mx = Math.max(d.bruteforceUs, d.kdtreeUs, d.hnswUs, 1);
+    document.getElementById('benchBars').innerHTML = [
+      { lbl: 'Brute Force', us: d.bruteforceUs, col: '#f87171' },
+      { lbl: 'KD-Tree',     us: d.kdtreeUs,     col: '#67e8f9' },
+      { lbl: 'HNSW',        us: d.hnswUs,       col: '#a78bfa' },
+    ].map(({ lbl, us, col }) => {
+      const pct  = Math.max((us / mx) * 100, 2);
+      const disp = us < 1000 ? us + ' μs' : (us/1000).toFixed(2) + ' ms';
+      return `<div class="brow">
+        <div class="blabel">
+          <span style="color:${col};font-weight:600">${lbl}</span>
+          <span style="color:var(--text3)">${disp}</span>
+        </div>
+        <div class="btrack">
+          <div class="bfill" style="width:0%;background:${col}" data-width="${pct}"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Animate bars in
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.bfill').forEach(el => {
+        el.style.width = el.dataset.width + '%';
+      });
+    });
+  } catch(_) {}
+}
+
+// ════════════════════════════════════════════════════════════
+//  HNSW INFO
+// ════════════════════════════════════════════════════════════
+async function loadHNSW() {
+  try {
+    const r = await fetch(API + '/hnsw-info');
+    const d = await r.json();
+    const maxN = d.nodesPerLayer[0] || 1;
+    document.getElementById('layers').innerHTML = d.nodesPerLayer.map((cnt, lyr) => {
+      const pct = Math.max((cnt / maxN) * 100, 2);
+      const edg = d.edgesPerLayer[lyr] || 0;
+      return `<div class="lrow">
+        <div class="lnum">L${lyr}</div>
+        <div class="ltrack">
+          <div class="lfill" style="width:0%" data-width="${pct}"></div>
+        </div>
+        <div class="lcount">${cnt}n &middot; ${edg}e</div>
+      </div>`;
+    }).join('') || `<div class="empty-state"><div class="empty-icon">🕸️</div><div class="empty-text" style="font-size:10px">Empty graph</div></div>`;
+
+    // Animate layer bars
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.lfill').forEach(el => {
+        el.style.width = el.dataset.width + '%';
+      });
+    });
+  } catch(_) {}
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADD / DELETE DEMO VECTOR
+// ════════════════════════════════════════════════════════════
+async function addVector() {
+  const meta = document.getElementById('addMeta').value.trim();
+  const cat  = document.getElementById('addCat').value;
+  if (!meta) return;
+  const emb = textToEmbedding(meta + ' ' + cat);
+  try {
+    await fetch(API + '/insert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metadata: meta, category: cat, embedding: emb })
+    });
+    document.getElementById('addMeta').value = '';
+    await loadItems(); loadHNSW();
+  } catch(_) {}
+}
+
+async function deleteItem(id) {
+  try {
+    await fetch(`${API}/delete/${id}`, { method: 'DELETE' });
+    searchResults = searchResults.filter(r => r.id !== id);
+    hitIds.delete(id);
+    renderResults(searchResults);
+    await loadItems(); loadHNSW();
+  } catch(_) {}
+}
+
+// ════════════════════════════════════════════════════════════
+//  OLLAMA STATUS
+// ════════════════════════════════════════════════════════════
+async function checkOllamaStatus() {
+  try {
+    const r = await fetch(API + '/status');
+    const d = await r.json();
+    const badge = document.getElementById('ollamaBadge');
+    const box   = document.getElementById('ollamaStatus');
+
+    if (d.ollamaAvailable) {
+      badge.className = 'badge ok';
+      badge.textContent = 'OLLAMA ✓';
+      box.className = 'ollama-card ok';
+      box.innerHTML =
+        `<div class="status-row">
+          <div class="status-dot online"></div>
+          <span style="font-size:11px;font-weight:600;color:var(--green)">Connected</span>
+        </div>
+        <div class="ollama-info">
+          <div class="info-row">
+            <span class="info-key">Embed model</span>
+            <span class="info-val">${d.embedModel}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Gen model</span>
+            <span class="info-val">${d.genModel}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Dimensions</span>
+            <span class="info-val">${d.docDims || '–'}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Documents</span>
+            <span class="info-val">${d.docCount} chunks</span>
+          </div>
+        </div>`;
+    } else {
+      badge.className = 'badge err';
+      badge.textContent = 'OLLAMA ✗';
+      box.className = 'ollama-card err';
+      box.innerHTML =
+        `<div class="status-row">
+          <div class="status-dot offline"></div>
+          <span style="font-size:11px;font-weight:600;color:var(--red)">Offline</span>
+        </div>
+        <div style="font-size:10px;color:var(--text3);line-height:1.8;margin-top:8px">
+          To enable RAG features:<br>
+          1. Install from <span style="color:var(--accent)">ollama.com</span><br>
+          2. <code>ollama pull nomic-embed-text</code><br>
+          3. <code>ollama pull llama3.2</code>
+        </div>`;
+    }
+  } catch(_) {}
+}
+
+// ════════════════════════════════════════════════════════════
+//  DOCUMENT MANAGEMENT
+// ════════════════════════════════════════════════════════════
+async function insertDocument() {
+  const title  = document.getElementById('docTitle').value.trim();
+  const text   = document.getElementById('docText').value.trim();
+  const btn    = document.getElementById('insertDocBtn');
+  const status = document.getElementById('insertStatus');
+
+  if (!title || !text) {
+    status.innerHTML = '<div class="insert-status error">⚠ Please provide both a title and text content.</div>';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Embedding…';
+  status.innerHTML = '<div class="insert-status" style="color:var(--text3)">🔄 Calling Ollama nomic-embed-text…</div>';
+
+  try {
+    const r = await fetch(API + '/doc/insert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, text })
+    });
+    const d = await r.json();
+
+    if (d.error) {
+      status.innerHTML = `<div class="insert-status error">✗ ${d.error}</div>`;
+    } else {
+      status.innerHTML = `<div class="insert-status success">✓ Inserted ${d.chunks} chunk(s) · ${d.dims}D embeddings</div>`;
+      document.getElementById('docTitle').value = '';
+      document.getElementById('docText').value  = '';
+
+      // Also add 16D fake vector to visualizer
+      const emb16 = textToEmbedding(title + ' ' + text);
+      fetch(API + '/insert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ metadata: title, category: 'doc', embedding: emb16 })
+      }).then(() => { loadItems().then(loadHNSW); });
+
+      loadDocList(); checkOllamaStatus();
+    }
+  } catch(_) {
+    status.innerHTML = '<div class="insert-status error">✗ Server error — is the backend running?</div>';
+  }
+  btn.disabled = false; btn.textContent = '⚡ Embed & Insert';
+}
+
+async function loadDocList() {
+  try {
+    const r    = await fetch(API + '/doc/list');
+    const docs = await r.json();
+    document.getElementById('docCountLabel').textContent = docs.length + ' chunks';
+
+    if (!docs.length) {
+      document.getElementById('docList').innerHTML =
+        `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-text">No documents yet. Insert some above.</div></div>`;
+      return;
+    }
+
+    document.getElementById('docList').innerHTML = docs.map(d => `
+      <div class="dcard">
+        <div class="dcard-top">
+          <div class="dcard-title">${d.title}</div>
+          <button class="del-btn" onclick="deleteDoc(${d.id})">✕</button>
+        </div>
+        <div class="dcard-preview">${d.preview}</div>
+        <div class="dcard-foot">
+          <span class="dcard-words">${d.words} words</span>
+        </div>
+      </div>`).join('');
+  } catch(_) {}
+}
+
+async function deleteDoc(id) {
+  try {
+    await fetch(`${API}/doc/delete/${id}`, { method: 'DELETE' });
+    loadDocList(); checkOllamaStatus();
+  } catch(_) {}
+}
+
+// ════════════════════════════════════════════════════════════
+//  RAG — ASK AI
+// ════════════════════════════════════════════════════════════
+document.getElementById('ragQuestion').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) askAI();
+});
+
+async function askAI() {
+  const question = document.getElementById('ragQuestion').value.trim();
+  if (!question) return;
+  const k   = parseInt(document.getElementById('ragK').value);
+  const btn = document.getElementById('askBtn');
+  btn.disabled = true; btn.textContent = 'Thinking…';
+
+  const history = document.getElementById('chatHistory');
+  history.innerHTML = '';
+
+  // User bubble
+  const qDiv = document.createElement('div');
+  qDiv.className = 'chat-q';
+  qDiv.textContent = question;
+  history.appendChild(qDiv);
+
+  // Thinking indicator
+  const thinkDiv = document.createElement('div');
+  thinkDiv.className = 'thinking';
+  thinkDiv.innerHTML =
+    `<div class="thinking-dots">
+      <div class="thinking-dot"></div>
+      <div class="thinking-dot"></div>
+      <div class="thinking-dot"></div>
+    </div>
+    Retrieving context &amp; generating answer…`;
+  history.appendChild(thinkDiv);
+  history.scrollTop = history.scrollHeight;
+
+  // Background: update scatter for RAG context
+  fetch(API + '/doc/search', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, k })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.contexts && data.contexts.length > 0) {
+      hitIds = new Set();
+      let sx=0, sy=0, sw=0;
+      data.contexts.forEach((ctx, i) => {
+        const pt = pcaPoints.find(p => p.item.category === 'doc' && ctx.title.startsWith(p.item.metadata));
+        if (pt) {
+          hitIds.add(pt.item.id);
+          const w = 1/(i+1); sx += pt.x*w; sy += pt.y*w; sw += w;
+        }
+      });
+      if (sw > 0) queryPt = { x: sx/sw + (Math.random()-0.5)*0.015, y: sy/sw + (Math.random()-0.5)*0.015 };
+    } else {
+      hitIds = new Set();
+      const emb16 = textToEmbedding(question);
+      fetch(`${API}/search?v=${emb16.join(',')}&k=3&metric=cosine&algo=hnsw`)
+        .then(res2 => res2.json())
+        .then(data2 => {
+          if (data2.results && data2.results.length > 0) {
+            let sx=0, sy=0, sw=0;
+            for (let i = 0; i < Math.min(3, data2.results.length); i++) {
+              const pt = pcaPoints.find(p => p.item.id === data2.results[i].id);
+              if (pt) { const w = 1/(i+1); sx+=pt.x*w; sy+=pt.y*w; sw+=w; }
+            }
+            if (sw > 0) queryPt = { x: sx/sw + (Math.random()-0.5)*0.015, y: sy/sw + (Math.random()-0.5)*0.015 };
+          }
+        }).catch(() => {});
+    }
+  }).catch(() => {});
+
+  try {
+    const r = await fetch(API + '/doc/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, k })
+    });
+    const d = await r.json();
+    thinkDiv.remove();
+
+    const aDiv = document.createElement('div');
+    aDiv.className = 'chat-a';
+
+    if (d.error) {
+      aDiv.innerHTML =
+        `<div class="chat-a-header">
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-name">Error</div>
+        </div>
+        <div class="chat-a-text" style="color:var(--red)">${d.error}</div>`;
+    } else {
+      aDiv.innerHTML =
+        `<div class="chat-a-header">
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-name">${d.model || 'AI'}</div>
+        </div>
+        <div class="chat-a-text typing-cursor" id="typeTarget"></div>
+        <div class="chat-ctx">
+          <div class="chat-ctx-label">Retrieved Context (${d.contexts.length} chunks)</div>
+          <div class="ctx-chips">
+            ${d.contexts.map((c, i) =>
+              `<span class="ctx-chip" onclick="toggleCtx(${i})">#${i+1} ${c.title} · ${c.distance.toFixed(3)}</span>`
+            ).join('')}
+          </div>
+          ${d.contexts.map((c, i) =>
+            `<div class="ctx-expand" id="ctx-${i}">${c.text}</div>`
+          ).join('')}
+        </div>`;
+
+      history.appendChild(aDiv);
+
+      // Typewriter
+      const target = aDiv.querySelector('#typeTarget');
+      const full   = d.answer;
+      let i = 0;
+      const timer = setInterval(() => {
+        if (i >= full.length) {
+          clearInterval(timer);
+          target.classList.remove('typing-cursor');
+          return;
+        }
+        target.textContent += full.slice(i, i + 3);
+        i += 3;
+        history.scrollTop = history.scrollHeight;
+      }, 16);
+    }
+
+    if (d.error) history.appendChild(aDiv);
+
+  } catch(_) {
+    thinkDiv.remove();
+    const err = document.createElement('div');
+    err.className = 'chat-a';
+    err.innerHTML =
+      `<div class="chat-a-header"><div class="ai-avatar">⚠</div><div class="ai-name">Error</div></div>
+       <div class="chat-a-text" style="color:var(--red)">Server error — is the backend running on port 8080?</div>`;
+    history.appendChild(err);
+  }
+
+  document.getElementById('ragQuestion').value = '';
+  btn.disabled = false; btn.textContent = '🤖 Ask AI';
+  history.scrollTop = history.scrollHeight;
+}
+
+function toggleCtx(i) {
+  const el = document.getElementById('ctx-' + i);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+// ════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════
+resize(); drawFrame();
+loadItems().then(loadHNSW);
+checkOllamaStatus();
+</script>
+</body>
+</html>
