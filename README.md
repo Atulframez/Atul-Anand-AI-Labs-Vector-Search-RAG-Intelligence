@@ -137,7 +137,8 @@ The Python version is **significantly easier to modify and extend** — perfect 
 **Atul Anand**  
 BCA (Hons.) Research, Amity University Noida  
 
-- 💻 AI & ML Enthusiast  
-- 🚀 Building Vector Databases & RAG Systems  
-- 🔗 GitHub: https://github.com/Atulframez?tab=overview&from=2026-04-01&to=2026-04-19 
+- AI & ML Enthusiast  
+- Building Vector Databases & RAG Systems  
+- GitHub: https://github.com/Atulframez?tab=overview&from=2026-04-01&to=2026-04-19
+- LinkedIn : https://www.linkedin.com/in/atulanand0902/
 
